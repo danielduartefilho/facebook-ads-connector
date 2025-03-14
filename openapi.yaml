@@ -1,10 +1,20 @@
-openapi: 3.1.0
+openapi: 3.0.0
 info:
-  title: Facebook Ads API Connector
+  title: Meta Ads API Connector
+  version: '1.0'
   description: |
-    Conector para integração com a API do Facebook Ads.
-    Suporta métricas de performance, insights e gerenciamento de campanhas.
-  version: 1.0.0
+    Conector para a API do Meta Ads v22.0.
+    
+    Fluxo de Autenticação:
+    1. Gerar token de sistema com client_credentials
+    2. Usar token para obter token de página via /me/accounts
+    3. Validar configuração com /setup/validate
+    
+    IDs Validados:
+    - App ID: 1660695328664197
+    - Página: 102264027940184 (Wiemspro Brasil)
+    - Conta: 906594379912215
+
 servers:
   - url: https://graph.facebook.com/v22.0
     description: Meta Graph API v22.0
@@ -210,6 +220,123 @@ components:
             $ref: '#/components/schemas/Error'
 
 paths:
+  /oauth/access_token:
+    get:
+      summary: Gerar token de sistema
+      operationId: generateSystemToken
+      parameters:
+        - name: client_id
+          in: query
+          required: true
+          schema:
+            type: string
+            example: "1660695328664197"
+        - name: client_secret
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: grant_type
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [client_credentials]
+        - name: scope
+          in: query
+          required: true
+          schema:
+            type: string
+            example: "ads_read,ads_management_read_only,pages_read_engagement"
+      responses:
+        '200':
+          description: Token de sistema gerado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+
+  /me/accounts:
+    get:
+      summary: Obter token de página
+      operationId: getPageToken
+      parameters:
+        - name: fields
+          in: query
+          required: true
+          schema:
+            type: string
+            example: "id,name,access_token,category,tasks"
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Token de página obtido com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageTokenResponse'
+
+  /setup/validate:
+    get:
+      summary: Validar configuração
+      operationId: validateSetup
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Configuração validada com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  account:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        example: "906594379912215"
+                      status:
+                        type: string
+                        example: "ACTIVE"
+                      permissions:
+                        type: array
+                        items:
+                          type: string
+                        example: ["ads_read", "ads_management_read_only"]
+                  app:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        example: "1660695328664197"
+                      status:
+                        type: string
+                        example: "LIVE"
+                      scopes:
+                        type: array
+                        items:
+                          type: string
+                        example: ["ads_read", "pages_read_engagement"]
+                  page:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        example: "102264027940184"
+                      name:
+                        type: string
+                        example: "Wiemspro Brasil"
+                      category:
+                        type: string
+                        example: "Business"
+                      permissions:
+                        type: array
+                        items:
+                          type: string
+                        example: ["pages_read_engagement"]
+
   /me:
     get:
       summary: Obter informações do usuário autenticado
@@ -255,27 +382,6 @@ paths:
                         timezone_name:
                           type: string
                           example: "America/Sao_Paulo"
-
-  /me/accounts:
-    get:
-      summary: Listar páginas do usuário
-      operationId: listPages
-      parameters:
-        - name: fields
-          in: query
-          required: true
-          schema:
-            type: string
-            example: "id,name,access_token,category,tasks"
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: Páginas listadas com sucesso
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PageTokenResponse'
 
   /{ad_account_id}/campaigns:
     get:
