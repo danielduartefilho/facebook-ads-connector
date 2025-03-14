@@ -16,10 +16,9 @@ components:
       scheme: bearer
       bearerFormat: JWT
       description: |
-        Token de acesso OAuth2. Pode ser:
-        1. Token de usuário (temporário)
-        2. Token de sistema (60 dias)
-        3. Token de página (permanente)
+        Token de acesso OAuth2. Para obter o token da página:
+        1. Use o token de usuário para chamar /me/accounts
+        2. O response incluirá o access_token permanente da página
 
   schemas:
     Error:
@@ -165,6 +164,43 @@ components:
           type: string
           example: "Configuração validada com sucesso"
 
+    UserResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "123456789"
+        name:
+          type: string
+          example: "Nome do Usuário"
+        email:
+          type: string
+          example: "usuario@email.com"
+
+    CampaignsResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              name:
+                type: string
+              status:
+                type: string
+                enum: [ACTIVE, PAUSED, DELETED]
+              objective:
+                type: string
+              daily_budget:
+                type: number
+                format: float
+              lifetime_budget:
+                type: number
+                format: float
+
   responses:
     UnauthorizedError:
       description: Erro de autenticação
@@ -186,14 +222,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  id:
-                    type: string
-                    example: "123456789"
-                  name:
-                    type: string
-                    example: "Nome do Usuário"
+                $ref: '#/components/schemas/UserResponse'
 
   /me/adaccounts:
     get:
@@ -216,7 +245,7 @@ paths:
                       properties:
                         id:
                           type: string
-                          example: "act_906594379912215"
+                          example: "906594379912215"
                         name:
                           type: string
                           example: "Wiemspro Brasil Ads"
@@ -231,6 +260,13 @@ paths:
     get:
       summary: Listar páginas do usuário
       operationId: listPages
+      parameters:
+        - name: fields
+          in: query
+          required: true
+          schema:
+            type: string
+            example: "id,name,access_token,category,tasks"
       security:
         - bearerAuth: []
       responses:
@@ -241,28 +277,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/PageTokenResponse'
 
-  /token/exchange:
-    post:
-      summary: Trocar token de usuário por token de página
-      operationId: exchangeUserToken
-      parameters:
-        - name: page_id
-          in: query
-          required: true
-          schema:
-            type: string
-            example: "102264027940184"
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: Token de página gerado com sucesso
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PageTokenResponse'
-
-  /act_{ad_account_id}/campaigns:
+  /{ad_account_id}/campaigns:
     get:
       summary: Listar campanhas
       operationId: listCampaigns
@@ -277,18 +292,13 @@ paths:
         - bearerAuth: []
       responses:
         '200':
-          description: Lista de campanhas retornada com sucesso
+          description: Campanhas listadas com sucesso
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Campaign'
+                $ref: '#/components/schemas/CampaignsResponse'
 
-  /act_{ad_account_id}/insights:
+  /{ad_account_id}/insights:
     get:
       summary: Obter insights gerais
       operationId: getInsights
@@ -327,7 +337,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/InsightsResponse'
 
-  /act_{ad_account_id}/insights/format_performance:
+  /{ad_account_id}/insights/format_performance:
     get:
       summary: Análise de performance por formato
       operationId: getFormatPerformance
@@ -388,7 +398,7 @@ paths:
                               format: float
                               example: 57.8
 
-  /act_{ad_account_id}/insights/instagram:
+  /{ad_account_id}/insights/instagram:
     get:
       summary: Métricas básicas do Instagram
       operationId: getInstagramInsights
@@ -432,7 +442,7 @@ paths:
                           type: integer
                           example: 33992
 
-  /act_{ad_account_id}/insights/cost_benefit:
+  /{ad_account_id}/insights/cost_benefit:
     get:
       summary: Análise de custo-benefício
       operationId: getCostBenefitAnalysis
@@ -485,7 +495,7 @@ paths:
                             format: float
                             example: 27.06
 
-  /act_{ad_account_id}/insights/audience:
+  /{ad_account_id}/insights/audience:
     get:
       summary: Segmentação demográfica e regional
       operationId: getAudienceInsights
@@ -541,7 +551,7 @@ paths:
                           format: float
                           example: 0.06
 
-  /act_{ad_account_id}/insights/geographic:
+  /{ad_account_id}/insights/geographic:
     get:
       summary: Performance por região
       operationId: getGeographicInsights
@@ -585,7 +595,7 @@ paths:
                           format: float
                           example: 0.08
 
-  /act_{ad_account_id}/insights/creative_performance:
+  /{ad_account_id}/insights/creative_performance:
     get:
       summary: Métricas de performance dos criativos
       operationId: getCreativePerformance
