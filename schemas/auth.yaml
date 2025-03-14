@@ -1,0 +1,174 @@
+components:
+  securitySchemes:
+    metaAdsAuth:
+      type: oauth2
+      description: |
+        Autenticação OAuth2 para Meta Ads API.
+        Requer token de sistema que é trocado por token de página.
+      flows:
+        clientCredentials:
+          tokenUrl: https://graph.facebook.com/v22.0/oauth/access_token
+          scopes:
+            ads_read: Leitura de dados de anúncios
+            ads_management_read_only: Leitura de dados de gerenciamento
+            pages_read_engagement: Leitura de engajamento de páginas
+            pages_manage_metadata: Gerenciamento de metadados de páginas
+            pages_show_list: Listagem de páginas
+            pages_read_user_content: Leitura de conteúdo de usuário
+            public_profile: Perfil público
+
+  schemas:
+    TokenResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+          description: Token de acesso para a API
+        token_type:
+          type: string
+          enum: [bearer]
+          example: "bearer"
+        expires_in:
+          type: integer
+          example: 5184000
+          description: Tempo de expiração em segundos (60 dias)
+
+    PageTokenResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                example: "102264027940184"
+                description: ID da página Wiemspro Brasil
+              name:
+                type: string
+                example: "Wiemspro Brasil"
+              access_token:
+                type: string
+                description: Token permanente da página
+
+    ValidationResponse:
+      type: object
+      properties:
+        account:
+          type: object
+          properties:
+            id:
+              type: string
+              example: "act_906594379912215"
+            status:
+              type: string
+              enum: [ACTIVE]
+            currency:
+              type: string
+              example: "BRL"
+            timezone:
+              type: string
+              example: "America/Sao_Paulo"
+        app:
+          type: object
+          properties:
+            id:
+              type: string
+              example: "1660695328664197"
+            status:
+              type: string
+              enum: [LIVE]
+            platform:
+              type: string
+              example: "Graph API"
+            version:
+              type: string
+              example: "v22.0"
+        page:
+          type: object
+          properties:
+            id:
+              type: string
+              example: "102264027940184"
+            type:
+              type: string
+              example: "Instagram Business"
+            status:
+              type: string
+              enum: [PUBLISHED]
+            category:
+              type: string
+              example: "Business"
+
+paths:
+  /oauth/access_token:
+    get:
+      summary: Gerar token de sistema
+      operationId: generateSystemToken
+      parameters:
+        - name: client_id
+          in: query
+          required: true
+          schema:
+            type: string
+            example: "1660695328664197"
+        - name: client_secret
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Token gerado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+
+  /me/accounts:
+    get:
+      summary: Trocar token de sistema por token de página
+      operationId: exchangePageToken
+      security:
+        - metaAdsAuth: [pages_read_engagement, pages_show_list]
+      responses:
+        '200':
+          description: Token de página obtido com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageTokenResponse'
+
+  /debug_token:
+    get:
+      summary: Validar token e escopos
+      operationId: validateToken
+      security:
+        - metaAdsAuth: []
+      responses:
+        '200':
+          description: Token validado com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      app_id:
+                        type: string
+                        example: "1660695328664197"
+                      type:
+                        type: string
+                        example: "PAGE"
+                      scopes:
+                        type: array
+                        items:
+                          type: string
+                          example: ["ads_read", "pages_read_engagement"]
+                      expires_at:
+                        type: integer
+                        example: 0
+                        description: "0 indica token permanente"

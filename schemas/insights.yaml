@@ -1,0 +1,271 @@
+paths:
+  /act_{ad_account_id}/insights/instagram:
+    get:
+      summary: Métricas básicas do Instagram
+      operationId: getInstagramInsights
+      parameters:
+        - name: ad_account_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "906594379912215"
+        - name: date_preset
+          in: query
+          schema:
+            type: string
+            enum: [last_7d]
+            default: "last_7d"
+      security:
+        - metaAdsAuth: [ads_read, instagram_basic]
+      responses:
+        '200':
+          description: Métricas do Instagram retornadas com sucesso
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                example: "public, max-age=3600"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        impressions:
+                          type: integer
+                          example: 69488
+                        reach:
+                          type: integer
+                          example: 33992
+
+  /act_{ad_account_id}/insights/format_performance:
+    get:
+      summary: Análise detalhada por formato
+      operationId: getFormatPerformance
+      parameters:
+        - name: ad_account_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "906594379912215"
+        - name: date_preset
+          in: query
+          schema:
+            type: string
+            enum: [last_7d]
+            default: "last_7d"
+      security:
+        - metaAdsAuth: [ads_read, instagram_manage_insights]
+      responses:
+        '200':
+          description: Performance por formato retornada com sucesso
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                example: "public, max-age=3600"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  stories:
+                    type: object
+                    properties:
+                      impressions:
+                        type: integer
+                        example: 13587
+                      reach:
+                        type: integer
+                        example: 11145
+                      spend:
+                        type: number
+                        format: float
+                        example: 243.78
+                      cpm:
+                        type: number
+                        format: float
+                        example: 17.94
+                      engagement_rate:
+                        type: number
+                        format: float
+                        example: 18.43
+                      video_retention_50:
+                        type: number
+                        format: float
+                        example: 57.8
+                  reels:
+                    type: object
+                    properties:
+                      impressions:
+                        type: integer
+                        example: 3761
+                      reach:
+                        type: integer
+                        example: 3720
+                      spend:
+                        type: number
+                        format: float
+                        example: 27.06
+                      cpm:
+                        type: number
+                        format: float
+                        example: 7.20
+                      engagement_rate:
+                        type: number
+                        format: float
+                        example: 31.16
+                      video_retention_50:
+                        type: number
+                        format: float
+                        example: 43.1
+
+  /act_{ad_account_id}/insights/audience:
+    get:
+      summary: Segmentação demográfica e regional
+      operationId: getAudienceInsights
+      parameters:
+        - name: ad_account_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "906594379912215"
+        - name: date_preset
+          in: query
+          schema:
+            type: string
+            enum: [last_7d, last_30d]
+            default: "last_7d"
+        - name: breakdown
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [age, gender, region]
+      security:
+        - metaAdsAuth: [ads_read]
+      responses:
+        '200':
+          description: Insights de audiência retornados com sucesso
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                example: "public, max-age=3600"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        breakdown_value:
+                          type: string
+                          example: "25-34"
+                        reach:
+                          type: integer
+                          example: 7831
+                        impressions:
+                          type: integer
+                          example: 9077
+                        engagement_rate:
+                          type: number
+                          format: float
+                          example: 17.44
+                        cpe:
+                          type: number
+                          format: float
+                          example: 0.06
+
+  /act_{ad_account_id}/insights/cost_benefit:
+    get:
+      summary: Análise de custo-benefício
+      operationId: getCostBenefitAnalysis
+      parameters:
+        - name: ad_account_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "906594379912215"
+        - name: date_preset
+          in: query
+          schema:
+            type: string
+            enum: [last_7d]
+            default: "last_7d"
+      security:
+        - metaAdsAuth: [ads_read]
+      responses:
+        '200':
+          description: Análise de custo-benefício retornada com sucesso
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                example: "public, max-age=3600"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  current_distribution:
+                    type: object
+                    properties:
+                      stories:
+                        type: object
+                        properties:
+                          percentage:
+                            type: number
+                            format: float
+                            example: 90.0
+                          amount:
+                            type: number
+                            format: float
+                            example: 243.78
+                      reels:
+                        type: object
+                        properties:
+                          percentage:
+                            type: number
+                            format: float
+                            example: 10.0
+                          amount:
+                            type: number
+                            format: float
+                            example: 27.06
+                  recommended_distribution:
+                    type: object
+                    properties:
+                      stories:
+                        type: object
+                        properties:
+                          percentage:
+                            type: number
+                            format: float
+                            example: 5.7
+                          amount:
+                            type: number
+                            format: float
+                            example: 57.16
+                      reels:
+                        type: object
+                        properties:
+                          percentage:
+                            type: number
+                            format: float
+                            example: 94.3
+                          amount:
+                            type: number
+                            format: float
+                            example: 942.84

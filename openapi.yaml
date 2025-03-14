@@ -1,0 +1,295 @@
+openapi: 3.1.0
+info:
+  title: Facebook Ads API Connector
+  description: |
+    Conector para integração com a API do Facebook Ads.
+    Suporta métricas de performance, insights e gerenciamento de campanhas.
+  version: 1.0.0
+servers:
+  - url: https://graph.facebook.com/v22.0
+    description: Meta Graph API v22.0
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token de acesso do Facebook Ads API
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 400
+        message:
+          type: string
+          example: "Bad Request - Parâmetros inválidos"
+        details:
+          type: string
+          example: "O parâmetro date_preset é inválido"
+
+    InsightsResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+            properties:
+              impressions:
+                type: integer
+                example: 69488
+              reach:
+                type: integer
+                example: 33992
+              spend:
+                type: number
+                format: float
+                example: 243.78
+              inline_post_engagement:
+                type: integer
+                example: 2504
+              video_p50_watched_actions:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    value:
+                      type: integer
+                      example: 57
+                    action_type:
+                      type: string
+                      example: "video_view"
+        paging:
+          type: object
+          properties:
+            cursors:
+              type: object
+              properties:
+                before:
+                  type: string
+                after:
+                  type: string
+
+    Campaign:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "23851632169650363"
+        name:
+          type: string
+          example: "Campanha Stories - Mar/2025"
+        status:
+          type: string
+          enum: [ACTIVE, PAUSED, DELETED]
+          example: "ACTIVE"
+        objective:
+          type: string
+          example: "REACH"
+        spend_cap:
+          type: number
+          format: float
+          example: 1000.00
+        start_time:
+          type: string
+          format: date-time
+          example: "2025-03-01T00:00:00-0300"
+        stop_time:
+          type: string
+          format: date-time
+          example: "2025-03-31T23:59:59-0300"
+
+paths:
+  /oauth/access_token:
+    get:
+      summary: Gerar token de sistema
+      operationId: generateSystemToken
+      parameters:
+        - name: client_id
+          in: query
+          required: true
+          schema:
+            type: string
+            example: "1660695328664197"
+        - name: client_secret
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Token gerado com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                  token_type:
+                    type: string
+                    example: "bearer"
+                  expires_in:
+                    type: integer
+                    example: 5184000
+
+  /me/accounts:
+    get:
+      summary: Listar páginas do usuário
+      operationId: listPages
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lista de páginas retornada com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          example: "102264027940184"
+                        name:
+                          type: string
+                          example: "Wiemspro Brasil"
+                        access_token:
+                          type: string
+
+  /act_{ad_account_id}/campaigns:
+    get:
+      summary: Listar campanhas
+      operationId: listCampaigns
+      parameters:
+        - name: ad_account_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "906594379912215"
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lista de campanhas retornada com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Campaign'
+
+  /act_{ad_account_id}/insights:
+    get:
+      summary: Obter insights gerais
+      operationId: getInsights
+      parameters:
+        - name: ad_account_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "906594379912215"
+        - name: date_preset
+          in: query
+          schema:
+            type: string
+            enum: [today, yesterday, last_3d, last_7d, last_30d]
+            example: "last_7d"
+        - name: breakdowns
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [age, gender, region, platform_position]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Insights retornados com sucesso
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                example: "public, max-age=3600"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InsightsResponse'
+
+  /act_{ad_account_id}/insights/format_performance:
+    get:
+      summary: Análise de performance por formato
+      operationId: getFormatPerformance
+      parameters:
+        - name: ad_account_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "906594379912215"
+        - name: date_preset
+          in: query
+          schema:
+            type: string
+            enum: [last_7d, last_30d]
+            example: "last_7d"
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Performance por formato retornada com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        format:
+                          type: string
+                          enum: [stories, reels]
+                        metrics:
+                          type: object
+                          properties:
+                            impressions:
+                              type: integer
+                              example: 13587
+                            reach:
+                              type: integer
+                              example: 11145
+                            spend:
+                              type: number
+                              format: float
+                              example: 243.78
+                            cpm:
+                              type: number
+                              format: float
+                              example: 17.94
+                            engagement_rate:
+                              type: number
+                              format: float
+                              example: 18.43
+                            video_retention_50:
+                              type: number
+                              format: float
+                              example: 57.8
+
+security:
+  - bearerAuth: []
