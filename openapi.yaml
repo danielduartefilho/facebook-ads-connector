@@ -103,6 +103,36 @@ components:
           format: date-time
           example: "2025-03-31T23:59:59-0300"
 
+    PageTokenResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+        token_type:
+          type: string
+          example: "bearer"
+        expires_in:
+          type: integer
+          example: 5184000
+
+    ValidationResponse:
+      type: object
+      properties:
+        valid:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "Configuração validada com sucesso"
+
+  responses:
+    UnauthorizedError:
+      description: Erro de autenticação
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
 paths:
   /oauth/access_token:
     get:
@@ -538,6 +568,52 @@ paths:
                           type: number
                           format: float
                           example: 102.90
+
+  /token/exchange:
+    get:
+      summary: Trocar token de usuário por token de página
+      operationId: exchangeUserToken
+      parameters:
+        - name: page_id
+          in: query
+          required: true
+          schema:
+            type: string
+            example: "102264027940184"
+        - name: access_token
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Token de página gerado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageTokenResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /token/validate:
+    get:
+      summary: Validar token e IDs
+      operationId: validateToken
+      parameters:
+        - name: access_token
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Configuração validada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
 
 security:
   - bearerAuth: []
