@@ -15,21 +15,31 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
-      description: Token de acesso do Facebook Ads API
+      description: |
+        Token de acesso OAuth2. Pode ser:
+        1. Token de usuário (temporário)
+        2. Token de sistema (60 dias)
+        3. Token de página (permanente)
 
   schemas:
     Error:
       type: object
       properties:
-        code:
-          type: integer
-          example: 400
-        message:
-          type: string
-          example: "Bad Request - Parâmetros inválidos"
-        details:
-          type: string
-          example: "O parâmetro date_preset é inválido"
+        error:
+          type: object
+          properties:
+            message:
+              type: string
+              example: "Invalid OAuth access token."
+            type:
+              type: string
+              example: "OAuthException"
+            code:
+              type: integer
+              example: 190
+            fbtrace_id:
+              type: string
+              example: "AbCdEfGhIjKlMnOp"
 
     InsightsResponse:
       type: object
@@ -106,14 +116,44 @@ components:
     PageTokenResponse:
       type: object
       properties:
+        data:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                example: "102264027940184"
+                description: ID da página
+              name:
+                type: string
+                example: "Wiemspro Brasil"
+              access_token:
+                type: string
+                description: Token permanente da página
+              category:
+                type: string
+                example: "Business"
+              tasks:
+                type: array
+                items:
+                  type: string
+                example: ["ANALYZE", "ADVERTISE", "CREATE_CONTENT"]
+
+    TokenResponse:
+      type: object
+      properties:
         access_token:
           type: string
+          description: Token de acesso para a API
         token_type:
           type: string
+          enum: [bearer]
           example: "bearer"
         expires_in:
           type: integer
           example: 5184000
+          description: Tempo de expiração em segundos (60 dias)
 
     ValidationResponse:
       type: object
@@ -134,48 +174,36 @@ components:
             $ref: '#/components/schemas/Error'
 
 paths:
-  /oauth/access_token:
+  /me:
     get:
-      summary: Gerar token de sistema
-      operationId: generateSystemToken
-      parameters:
-        - name: client_id
-          in: query
-          required: true
-          schema:
-            type: string
-            example: "1660695328664197"
-        - name: client_secret
-          in: query
-          required: true
-          schema:
-            type: string
+      summary: Obter informações do usuário autenticado
+      operationId: getUserInfo
+      security:
+        - bearerAuth: []
       responses:
         '200':
-          description: Token gerado com sucesso
+          description: Informações do usuário retornadas com sucesso
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  access_token:
+                  id:
                     type: string
-                  token_type:
+                    example: "123456789"
+                  name:
                     type: string
-                    example: "bearer"
-                  expires_in:
-                    type: integer
-                    example: 5184000
+                    example: "Nome do Usuário"
 
-  /me/accounts:
+  /me/adaccounts:
     get:
-      summary: Listar páginas do usuário
-      operationId: listPages
+      summary: Listar contas de anúncio do usuário
+      operationId: listAdAccounts
       security:
         - bearerAuth: []
       responses:
         '200':
-          description: Lista de páginas retornada com sucesso
+          description: Contas de anúncio listadas com sucesso
           content:
             application/json:
               schema:
@@ -188,12 +216,51 @@ paths:
                       properties:
                         id:
                           type: string
-                          example: "102264027940184"
+                          example: "act_906594379912215"
                         name:
                           type: string
-                          example: "Wiemspro Brasil"
-                        access_token:
+                          example: "Wiemspro Brasil Ads"
+                        currency:
                           type: string
+                          example: "BRL"
+                        timezone_name:
+                          type: string
+                          example: "America/Sao_Paulo"
+
+  /me/accounts:
+    get:
+      summary: Listar páginas do usuário
+      operationId: listPages
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Páginas listadas com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageTokenResponse'
+
+  /token/exchange:
+    post:
+      summary: Trocar token de usuário por token de página
+      operationId: exchangeUserToken
+      parameters:
+        - name: page_id
+          in: query
+          required: true
+          schema:
+            type: string
+            example: "102264027940184"
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Token de página gerado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageTokenResponse'
 
   /act_{ad_account_id}/campaigns:
     get:
@@ -568,32 +635,6 @@ paths:
                           type: number
                           format: float
                           example: 102.90
-
-  /token/exchange:
-    get:
-      summary: Trocar token de usuário por token de página
-      operationId: exchangeUserToken
-      parameters:
-        - name: page_id
-          in: query
-          required: true
-          schema:
-            type: string
-            example: "102264027940184"
-        - name: access_token
-          in: query
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Token de página gerado com sucesso
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PageTokenResponse'
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
 
   /token/validate:
     get:
