@@ -20,7 +20,7 @@ class MetaAdsConnector:
             "client_id": self.APP_ID,
             "client_secret": self.client_secret,
             "grant_type": "client_credentials",
-            "scope": "ads_read,ads_management_read_only,pages_read_engagement"
+            "scope": "ads_read ads_management_read_only pages_read_engagement"  # Scopes validados sem vírgulas
         }
         
         response = requests.get(endpoint, params=params)
@@ -31,7 +31,7 @@ class MetaAdsConnector:
             print("✅ Token de sistema gerado com sucesso")
             return data
         else:
-            print("❌ Erro ao gerar token de sistema:", data)
+            print("❌ Erro ao gerar token de sistema:", data.get("error", {}).get("message", "Erro desconhecido"))
             return None
 
     def get_page_token(self):
@@ -58,7 +58,7 @@ class MetaAdsConnector:
             print("❌ Página não encontrada:", self.PAGE_ID)
             return None
         else:
-            print("❌ Erro ao obter token da página:", data)
+            print("❌ Erro ao obter token da página:", data.get("error", {}).get("message", "Erro desconhecido"))
             return None
 
     def validate_setup(self):
@@ -82,7 +82,7 @@ class MetaAdsConnector:
             print(f"✅ Página: {data['page']['id']} ({data['page']['name']})")
             return data
         else:
-            print("❌ Erro ao validar configuração:", data)
+            print("❌ Erro ao validar configuração:", data.get("error", {}).get("message", "Erro desconhecido"))
             return None
 
     def get_instagram_insights(self):
@@ -106,7 +106,7 @@ class MetaAdsConnector:
             print(f"✅ Alcance: {data['data'][0]['reach']:,}")
             return data
         else:
-            print("❌ Erro ao obter métricas:", data)
+            print("❌ Erro ao obter métricas:", data.get("error", {}).get("message", "Erro desconhecido"))
             return None
 
 def main():
